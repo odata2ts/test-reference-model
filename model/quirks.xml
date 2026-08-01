@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Companion "torture" fixture to library.xml.
+  Contains ONLY deliberately non-conformant CSDL constructs (invalid SimpleIdentifiers, empty enum),
+  quarantined here so they cannot poison whole-document $metadata parsing of the main model.
+  The file itself is XML-well-formed; the violations exist at CSDL level only.
+-->
+<edmx:Edmx Version="4.0" xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx">
+  <edmx:DataServices>
+    <Schema Namespace="Library.Quirks" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+
+      <!-- Non-conformant: the OASIS edm.xsd requires at least one child element (Member or
+           Annotation) per EnumType (TEnumType: xs:choice minOccurs="1"); a fully empty EnumType
+           is XSD-invalid (cf. odata2ts#270) -->
+      <EnumType Name="ReservedCategory" />
+
+      <EntityType Name="LegacyRecord">
+        <Key>
+          <PropertyRef Name="Id" />
+        </Key>
+        <Property Name="Id" Type="Edm.Int32" Nullable="false" />
+        <!-- Non-conformant SimpleIdentifier: contains a space (cf. odata2ts#335, Claris FileMaker) -->
+        <Property Name="Call Number" Type="Edm.String" />
+        <!-- Non-conformant SimpleIdentifier: contains a raw '/', colliding with the OData path separator -->
+        <Property Name="Author/Editor" Type="Edm.String" />
+      </EntityType>
+
+      <EntityContainer Name="QuirksService">
+        <EntitySet Name="LegacyRecords" EntityType="Library.Quirks.LegacyRecord" />
+      </EntityContainer>
+
+    </Schema>
+  </edmx:DataServices>
+</edmx:Edmx>

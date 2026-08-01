@@ -1,0 +1,5 @@
+node_modules
+
+# The EDMX files are the deliverable: hand-curated, heavily commented and byte-stable on purpose.
+# Prettier would rewrap and re-indent them, which changes what consumers diff against.
+model/*.xml

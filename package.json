@@ -1,0 +1,16 @@
+{
+  "name": "test-reference-model",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Reference model and feature matrices used to evaluate OData server and client implementations",
+  "repository": "git@github.com:odata2ts/test-reference-model.git",
+  "license": "MIT",
+  "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3",
+    "prettier-plugin-packagejson": "^2.5.1"
+  }
+}
