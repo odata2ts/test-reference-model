@@ -6,7 +6,7 @@ what the protocol actually offers to measure them by.
 
 ## The results
 
-Everything in this repository exists for these four documents:
+Everything in this repository exists for these documents:
 
 | Document                                                           | What it is                                                                                                       |
 | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
@@ -15,7 +15,16 @@ Everything in this repository exists for these four documents:
 | **[feature-matrix/odata-v4.md](feature-matrix/odata-v4.md)**       | Every feature of OData 4.0 / 4.01, 296 rows, with conformance level and `MUST`/`SHOULD`/`MAY`                    |
 | **[feature-matrix/odata-v1-v3.md](feature-matrix/odata-v1-v3.md)** | The same for OData 1.0 / 2.0 / 3.0, 201 rows, with the role the obligation falls on                              |
 
-There is a fifth artifact, [model/quirks.xml](model/quirks.xml): a small companion fixture holding
+The older protocol versions get **models of their own** rather than a downgraded V4 document, because
+most of what the V4 model is built to probe has no pre-V4 spelling at all:
+
+| Document                                             | What it is                                                                                    |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| **[model/library-v2.xml](model/library-v2.xml)**     | The same domain in CSDL 2.0 — 18 entity types, explicit `Association`s, 26 service operations |
+| **[model/library-v3.xml](model/library-v3.xml)**     | CSDL 3.0: that file **plus the 3.0 delta**, so the diff between the two is the delta itself   |
+| **[model/library-v2-v3.md](model/library-v2-v3.md)** | What was dropped and why, what 3.0 brings back, and what V2 says better than V4               |
+
+There is one further artifact, [model/quirks.xml](model/quirks.xml): a small companion fixture holding
 **deliberately non-conformant** CSDL. It is kept separate so that a parser choking on it cannot poison
 the main model.
 
@@ -28,6 +37,10 @@ The **model** is a probe, not a benchmark. It packs as much of the protocol as p
 coherent domain, deliberately in _combination_ - streaming inside an inheritance hierarchy, an open type
 carrying navigation properties and bound operations - because per-feature mini-fixtures structurally
 cannot express that. An implementation is run against it and the deviations are recorded.
+
+The **per-version renditions** apply one rule: start from the V4 model and remove what the version
+cannot express, never approximate it. So a feature missing from `library-v2.xml` is missing from OData
+2.0, not softened for it - which is what keeps a verdict a verdict about the implementation.
 
 Neither document rates anyone. **Where a concrete implementation stands is recorded in that
 implementation's own repository**, so this one stays neutral and does not have to be touched whenever a
@@ -58,10 +71,10 @@ Intermediate level.
 
 ## Layout
 
-| Path              | Contents                                                                     |
-| ----------------- | ---------------------------------------------------------------------------- |
-| `model/`          | The reference model: EDMX, its description, and the non-conformant companion |
-| `feature-matrix/` | One document per specification family, independent of any implementation     |
+| Path              | Contents                                                                                             |
+| ----------------- | ---------------------------------------------------------------------------------------------------- |
+| `model/`          | The reference model: EDMX per protocol version, their descriptions, and the non-conformant companion |
+| `feature-matrix/` | One document per specification family, independent of any implementation                             |
 
 ## Conventions
 
