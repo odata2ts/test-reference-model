@@ -1,0 +1,479 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  OData Server Feature Test Model "Library" - OData V3 rendition (CSDL 3.0, DataServiceVersion 3.0).
+
+  This file is library-v2.xml plus everything OData 3.0 adds, and nothing else. Reading the two side by
+  side is the point: the diff between them *is* the 3.0 delta, expressed in a model rather than in prose.
+  See library-v2-v3.md, and feature-matrix/odata-v1-v3.md for the version each construct belongs to.
+
+  What 3.0 brings back that V2 had to drop:
+    enumeration types, collection-valued properties, geospatial types, named resource streams,
+    containment, the vocabulary mechanism, and - the largest one - the split of the single V2 service
+    operation into bindable functions and actions.
+
+  What still separates this from library.xml (V4): type definitions, singletons, open types,
+  Edm.Untyped, alternate keys, navigation property binding, composable functions, operation overloads,
+  the Edm.Date / Edm.TimeOfDay / Edm.Duration trio, and the standard vocabularies.
+-->
+<edmx:Edmx Version="1.0" xmlns:edmx="http://schemas.microsoft.com/ado/2007/06/edmx">
+  <edmx:DataServices m:DataServiceVersion="3.0" xmlns:m="http://schemas.microsoft.com/ado/2007/08/dataservices/metadata">
+
+    <Schema Namespace="Library.Catalog" xmlns="http://schemas.microsoft.com/ado/2009/11/edm">
+
+      <!-- 3.0: enumeration types. A flags enum with a deliberately combined member, and one with an
+           explicit underlying type. Both are Edm.Int32-based unless stated otherwise. -->
+      <EnumType Name="Amenities" IsFlags="true">
+        <Member Name="WheelchairAccessible" Value="1" />
+        <Member Name="Parking" Value="2" />
+        <Member Name="Café" Value="4" />
+        <Member Name="KidsArea" Value="8" />
+        <Member Name="StudyRoom" Value="16" />
+        <Member Name="FullService" Value="31" />
+      </EnumType>
+
+      <EnumType Name="AvailabilityStatus" UnderlyingType="Edm.Byte">
+        <Member Name="Available" Value="0" />
+        <Member Name="OnLoan" Value="1" />
+        <Member Name="InRepair" Value="2" />
+        <Member Name="Missing" Value="3" />
+      </EnumType>
+
+      <!-- 3.0: the vocabulary mechanism. The terms themselves have no defined semantics before V4, so
+           this is a service-defined term - which is exactly what a 3.0 client has to tolerate. -->
+      <ValueTerm Name="IsRareHolding" Type="Edm.Boolean" />
+
+      <ComplexType Name="Address" Abstract="true">
+        <Property Name="Street" Type="Edm.String" MaxLength="120" />
+        <Property Name="City" Type="Edm.String" MaxLength="80" />
+      </ComplexType>
+
+      <ComplexType Name="PostalAddress" BaseType="Library.Catalog.Address">
+        <Property Name="PostalCode" Type="Edm.String" MaxLength="10" />
+        <Property Name="Country" Type="Edm.String" MaxLength="60" />
+      </ComplexType>
+
+      <ComplexType Name="ConditionReport">
+        <Property Name="ConditionBefore" Type="Edm.Byte" />
+        <Property Name="ConditionAfter" Type="Edm.Byte" />
+        <Property Name="Remark" Type="Edm.String" />
+      </ComplexType>
+
+      <ComplexType Name="MediumStats">
+        <Property Name="TotalLoanCount" Type="Edm.Int64" />
+        <!-- still Edm.Time: Edm.Duration is a V4 type -->
+        <Property Name="AverageLoanDuration" Type="Edm.Time" />
+      </ComplexType>
+
+      <EntityType Name="Medium" Abstract="true">
+        <Key>
+          <PropertyRef Name="Id" />
+        </Key>
+        <Property Name="Id" Type="Edm.Guid" Nullable="false" />
+        <Property Name="Title" Type="Edm.String" Nullable="false" MaxLength="200" />
+        <Property Name="Language" Type="Edm.String" MaxLength="40" />
+        <!-- still Edm.DateTime: Edm.Date is a V4 type -->
+        <Property Name="PublicationDate" Type="Edm.DateTime" />
+        <!-- 3.0: collection-valued property -->
+        <Property Name="Keywords" Type="Collection(Edm.String)" />
+        <Property Name="PopularityScore" Type="Edm.Double" />
+        <NavigationProperty Name="Copies" Relationship="Library.Circulation.Medium_Copies" FromRole="Medium" ToRole="Copy" />
+      </EntityType>
+
+      <EntityType Name="PrintMedium" BaseType="Library.Catalog.Medium" Abstract="true">
+        <!-- still a plain String: TypeDefinition and alternate keys are V4 -->
+        <Property Name="ISBN" Type="Edm.String" MaxLength="13" />
+      </EntityType>
+
+      <EntityType Name="Book" BaseType="Library.Catalog.PrintMedium">
+        <Property Name="PageCount" Type="Edm.Int16" />
+        <Property Name="AgeRating" Type="Edm.Byte" />
+        <NavigationProperty Name="Publisher" Relationship="Library.Catalog.Book_Publisher" FromRole="Book" ToRole="Publisher" />
+      </EntityType>
+
+      <EntityType Name="Magazine" BaseType="Library.Catalog.PrintMedium">
+        <Property Name="IssueNumber" Type="Edm.Int32" />
+      </EntityType>
+
+      <EntityType Name="TradeJournal" BaseType="Library.Catalog.Magazine">
+        <Property Name="Field" Type="Edm.String" />
+      </EntityType>
+
+      <EntityType Name="AudioMedium" BaseType="Library.Catalog.Medium" Abstract="true">
+        <Property Name="Duration" Type="Edm.Time" />
+      </EntityType>
+
+      <!--
+        Two 3.0 features on one type, which is the combination the V4 model exists to test:
+        `Sample` is a named resource stream next to the entity's own content, and `Chapters` is a
+        containment navigation - so AudiobookChapter has no entity set of its own and is reachable
+        only through its Audiobook.
+      -->
+      <EntityType Name="Audiobook" BaseType="Library.Catalog.AudioMedium">
+        <Property Name="Narrator" Type="Edm.String" />
+        <Property Name="Sample" Type="Edm.Stream" />
+        <NavigationProperty Name="Chapters" Relationship="Library.Catalog.Audiobook_Chapters" FromRole="Audiobook" ToRole="Chapter" ContainsTarget="true" />
+      </EntityType>
+
+      <EntityType Name="AudiobookChapter" m:HasStream="true">
+        <Key>
+          <PropertyRef Name="Id" />
+        </Key>
+        <Property Name="Id" Type="Edm.Int32" Nullable="false" />
+        <Property Name="Title" Type="Edm.String" />
+      </EntityType>
+
+      <EntityType Name="DVD" BaseType="Library.Catalog.AudioMedium">
+        <Property Name="RegionCode" Type="Edm.Byte" />
+      </EntityType>
+
+      <EntityType Name="EBook" BaseType="Library.Catalog.Medium" m:HasStream="true">
+        <Property Name="FileFormat" Type="Edm.String" MaxLength="20" />
+      </EntityType>
+
+      <Association Name="Book_Publisher">
+        <End Role="Book" Type="Library.Catalog.Book" Multiplicity="*" />
+        <End Role="Publisher" Type="PublisherRegistry.Publisher" Multiplicity="0..1" />
+      </Association>
+
+      <Association Name="Audiobook_Chapters">
+        <End Role="Audiobook" Type="Library.Catalog.Audiobook" Multiplicity="1" />
+        <End Role="Chapter" Type="Library.Catalog.AudiobookChapter" Multiplicity="*" />
+      </Association>
+
+      <Annotations Target="Library.Catalog.EBook">
+        <ValueAnnotation Term="Library.Catalog.IsRareHolding" Bool="false" />
+      </Annotations>
+
+    </Schema>
+
+    <Schema Namespace="Library.Circulation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm">
+
+      <ComplexType Name="OverdueNotice">
+        <Property Name="Reason" Type="Edm.String" />
+        <Property Name="Amount" Type="Edm.Decimal" Precision="5" Scale="2" />
+        <Property Name="CreatedAt" Type="Edm.DateTimeOffset" Precision="7" />
+      </ComplexType>
+
+      <ComplexType Name="LoanStats">
+        <Property Name="TotalLoans" Type="Edm.Int64" />
+        <Property Name="AverageLoanDuration" Type="Edm.Time" />
+      </ComplexType>
+
+      <ComplexType Name="BranchStats">
+        <Property Name="BranchId" Type="Edm.Int32" />
+        <Property Name="LoanCount" Type="Edm.Int64" />
+      </ComplexType>
+
+      <ComplexType Name="AnnualReport">
+        <Property Name="Year" Type="Edm.Int32" />
+        <Property Name="TotalLoans" Type="Edm.Int64" />
+        <Property Name="TotalLateFees" Type="Edm.Decimal" Precision="12" Scale="2" />
+      </ComplexType>
+
+      <!-- back in V3, as the parameter type of the LoanStatistics function: 3.0 lifts the
+           primitive-only restriction on operation parameters -->
+      <ComplexType Name="DateRange">
+        <Property Name="From" Type="Edm.DateTime" />
+        <Property Name="To" Type="Edm.DateTime" />
+      </ComplexType>
+
+      <EntityType Name="Member">
+        <Key>
+          <PropertyRef Name="Id" />
+        </Key>
+        <Property Name="Id" Type="Edm.Int32" Nullable="false" />
+        <Property Name="Name" Type="Edm.String" Nullable="false" MaxLength="100" />
+        <Property Name="DateOfBirth" Type="Edm.DateTime" />
+        <Property Name="Address" Type="Library.Catalog.PostalAddress" />
+        <!-- 3.0: a collection of a complex type -->
+        <Property Name="PreviousAddresses" Type="Collection(Library.Catalog.PostalAddress)" />
+        <Property Name="ActiveSince" Type="Edm.DateTimeOffset" Precision="7" />
+        <Property Name="Balance" Type="Edm.Decimal" Precision="9" Scale="2" />
+        <NavigationProperty Name="Loans" Relationship="Library.Circulation.Member_Loans" FromRole="Member" ToRole="Loan" />
+        <NavigationProperty Name="Reservations" Relationship="Library.Circulation.Member_Reservations" FromRole="Member" ToRole="Reservation" />
+        <NavigationProperty Name="IdDocument" Relationship="Library.Circulation.Member_IdDocument" FromRole="Member" ToRole="IdDocument" />
+      </EntityType>
+
+      <EntityType Name="Copy">
+        <Key>
+          <PropertyRef Name="MediumId" />
+          <PropertyRef Name="InventoryNumber" />
+        </Key>
+        <Property Name="MediumId" Type="Edm.Guid" Nullable="false" />
+        <Property Name="InventoryNumber" Type="Edm.Int32" Nullable="false" />
+        <Property Name="Condition" Type="Edm.Byte" ConcurrencyMode="Fixed" />
+        <Property Name="IsLoanable" Type="Edm.Boolean" Nullable="false" DefaultValue="true" />
+        <!-- 3.0: enum-typed property -->
+        <Property Name="Status" Type="Library.Catalog.AvailabilityStatus" />
+        <Property Name="AcquisitionDate" Type="Edm.DateTime" />
+        <Property Name="WeightKg" Type="Edm.Single" />
+        <Property Name="Location_" Type="Edm.String" MaxLength="10" Unicode="false" />
+        <NavigationProperty Name="Medium" Relationship="Library.Circulation.Medium_Copies" FromRole="Copy" ToRole="Medium" />
+        <NavigationProperty Name="Location" Relationship="Library.Circulation.Copy_Location" FromRole="Copy" ToRole="Branch" />
+      </EntityType>
+
+      <EntityType Name="Loan">
+        <Key>
+          <PropertyRef Name="Id" />
+        </Key>
+        <Property Name="Id" Type="Edm.Guid" Nullable="false" />
+        <Property Name="LoanedAt" Type="Edm.DateTimeOffset" Nullable="false" Precision="7" />
+        <Property Name="DueDate" Type="Edm.DateTime" Nullable="false" />
+        <Property Name="ReturnedAt" Type="Edm.DateTimeOffset" Precision="7" />
+        <Property Name="LateFee" Type="Edm.Decimal" Precision="5" Scale="2" />
+        <NavigationProperty Name="Member" Relationship="Library.Circulation.Member_Loans" FromRole="Loan" ToRole="Member" />
+        <NavigationProperty Name="Copy" Relationship="Library.Circulation.Loan_Copy" FromRole="Loan" ToRole="Copy" />
+      </EntityType>
+
+      <EntityType Name="Reservation">
+        <Key>
+          <PropertyRef Name="Id" />
+        </Key>
+        <Property Name="Id" Type="Edm.Guid" Nullable="false" />
+        <Property Name="ReservedAt" Type="Edm.DateTimeOffset" Precision="7" />
+      </EntityType>
+
+      <EntityType Name="IdDocument">
+        <Key>
+          <PropertyRef Name="Id" />
+        </Key>
+        <Property Name="Id" Type="Edm.Guid" Nullable="false" />
+        <Property Name="Scan" Type="Edm.Binary" />
+        <Property Name="UploadedAt" Type="Edm.DateTimeOffset" Precision="7" />
+      </EntityType>
+
+      <!-- 3.0: the geospatial family, each with an explicit SRID. Geography uses 4326, Geometry 0. -->
+      <EntityType Name="Branch">
+        <Key>
+          <PropertyRef Name="Id" />
+        </Key>
+        <Property Name="Id" Type="Edm.Int32" Nullable="false" />
+        <Property Name="Name" Type="Edm.String" Nullable="false" MaxLength="100" />
+        <Property Name="Address" Type="Library.Catalog.PostalAddress" />
+        <Property Name="Location" Type="Edm.GeographyPoint" SRID="4326" />
+        <Property Name="CatchmentArea" Type="Edm.GeographyPolygon" SRID="4326" />
+        <Property Name="LowestFloor" Type="Edm.SByte" />
+        <Property Name="FloorPlanOrigin" Type="Edm.GeometryPoint" SRID="0" />
+        <Property Name="FloorPlanShapes" Type="Edm.GeometryCollection" SRID="0" />
+        <Property Name="OpensAt" Type="Edm.Time" />
+        <Property Name="ClosesAt" Type="Edm.Time" />
+        <Property Name="Amenities" Type="Library.Catalog.Amenities" />
+        <Property Name="Population" Type="Edm.Int64" />
+      </EntityType>
+
+      <!-- exists only for the geospatial types, and therefore only from 3.0 on -->
+      <EntityType Name="Bookmobile">
+        <Key>
+          <PropertyRef Name="Id" />
+        </Key>
+        <Property Name="Id" Type="Edm.Int32" Nullable="false" />
+        <Property Name="LicensePlate" Type="Edm.String" MaxLength="12" />
+        <Property Name="Route" Type="Edm.GeographyLineString" SRID="4326" />
+        <Property Name="CurrentPosition" Type="Edm.GeographyPoint" SRID="4326" />
+      </EntityType>
+
+      <Association Name="Medium_Copies">
+        <End Role="Medium" Type="Library.Catalog.Medium" Multiplicity="1" />
+        <End Role="Copy" Type="Library.Circulation.Copy" Multiplicity="*" />
+        <ReferentialConstraint>
+          <Principal Role="Medium">
+            <PropertyRef Name="Id" />
+          </Principal>
+          <Dependent Role="Copy">
+            <PropertyRef Name="MediumId" />
+          </Dependent>
+        </ReferentialConstraint>
+      </Association>
+
+      <Association Name="Member_Loans">
+        <End Role="Member" Type="Library.Circulation.Member" Multiplicity="1">
+          <OnDelete Action="Cascade" />
+        </End>
+        <End Role="Loan" Type="Library.Circulation.Loan" Multiplicity="*" />
+      </Association>
+
+      <Association Name="Member_Reservations">
+        <End Role="Member" Type="Library.Circulation.Member" Multiplicity="0..1" />
+        <End Role="Reservation" Type="Library.Circulation.Reservation" Multiplicity="*" />
+      </Association>
+
+      <Association Name="Member_IdDocument">
+        <End Role="Member" Type="Library.Circulation.Member" Multiplicity="0..1" />
+        <End Role="IdDocument" Type="Library.Circulation.IdDocument" Multiplicity="0..1" />
+      </Association>
+
+      <Association Name="Copy_Location">
+        <End Role="Copy" Type="Library.Circulation.Copy" Multiplicity="*" />
+        <End Role="Branch" Type="Library.Circulation.Branch" Multiplicity="0..1" />
+      </Association>
+
+      <Association Name="Loan_Copy">
+        <End Role="Loan" Type="Library.Circulation.Loan" Multiplicity="*" />
+        <End Role="Copy" Type="Library.Circulation.Copy" Multiplicity="1" />
+      </Association>
+
+    </Schema>
+
+    <Schema Namespace="PublisherRegistry" xmlns="http://schemas.microsoft.com/ado/2009/11/edm">
+
+      <EntityType Name="Publisher">
+        <Key>
+          <PropertyRef Name="Id" />
+        </Key>
+        <Property Name="Id" Type="Edm.Int32" Nullable="false" />
+        <Property Name="Name" Type="Edm.String" Nullable="false" MaxLength="100" />
+        <Property Name="Country" Type="Edm.String" MaxLength="60" />
+        <Property Name="Founded" Type="Edm.DateTime" />
+        <NavigationProperty Name="Books" Relationship="Library.Catalog.Book_Publisher" FromRole="Publisher" ToRole="Book" />
+      </EntityType>
+
+      <!-- Deliberately the same type name as Library.Circulation.Branch, in a different namespace -->
+      <EntityType Name="Branch">
+        <Key>
+          <PropertyRef Name="Id" />
+        </Key>
+        <Property Name="Id" Type="Edm.Int32" Nullable="false" />
+        <Property Name="City" Type="Edm.String" MaxLength="80" />
+        <Property Name="Country" Type="Edm.String" MaxLength="60" />
+      </EntityType>
+
+    </Schema>
+
+    <Schema Namespace="Library.Service" xmlns="http://schemas.microsoft.com/ado/2009/11/edm">
+
+      <EntityContainer Name="LibraryService" m:IsDefaultEntityContainer="true">
+
+        <EntitySet Name="Media" EntityType="Library.Catalog.Medium" />
+        <EntitySet Name="Copies" EntityType="Library.Circulation.Copy" />
+        <EntitySet Name="Members" EntityType="Library.Circulation.Member" />
+        <EntitySet Name="Loans" EntityType="Library.Circulation.Loan" />
+        <EntitySet Name="Reservations" EntityType="Library.Circulation.Reservation" />
+        <EntitySet Name="IdDocuments" EntityType="Library.Circulation.IdDocument" />
+        <EntitySet Name="Branches" EntityType="Library.Circulation.Branch" />
+        <EntitySet Name="Bookmobiles" EntityType="Library.Circulation.Bookmobile" />
+        <EntitySet Name="Publishers" EntityType="PublisherRegistry.Publisher" />
+        <EntitySet Name="PublisherBranches" EntityType="PublisherRegistry.Branch" />
+
+        <!-- Audiobook_Chapters has no association set on purpose: the navigation is a containment,
+             so the chapters live inside their Audiobook and have no set of their own. -->
+        <AssociationSet Name="Medium_Copies" Association="Library.Circulation.Medium_Copies">
+          <End Role="Medium" EntitySet="Media" />
+          <End Role="Copy" EntitySet="Copies" />
+        </AssociationSet>
+        <AssociationSet Name="Book_Publisher" Association="Library.Catalog.Book_Publisher">
+          <End Role="Book" EntitySet="Media" />
+          <End Role="Publisher" EntitySet="Publishers" />
+        </AssociationSet>
+        <AssociationSet Name="Member_Loans" Association="Library.Circulation.Member_Loans">
+          <End Role="Member" EntitySet="Members" />
+          <End Role="Loan" EntitySet="Loans" />
+        </AssociationSet>
+        <AssociationSet Name="Member_Reservations" Association="Library.Circulation.Member_Reservations">
+          <End Role="Member" EntitySet="Members" />
+          <End Role="Reservation" EntitySet="Reservations" />
+        </AssociationSet>
+        <AssociationSet Name="Member_IdDocument" Association="Library.Circulation.Member_IdDocument">
+          <End Role="Member" EntitySet="Members" />
+          <End Role="IdDocument" EntitySet="IdDocuments" />
+        </AssociationSet>
+        <AssociationSet Name="Copy_Location" Association="Library.Circulation.Copy_Location">
+          <End Role="Copy" EntitySet="Copies" />
+          <End Role="Branch" EntitySet="Branches" />
+        </AssociationSet>
+        <AssociationSet Name="Loan_Copy" Association="Library.Circulation.Loan_Copy">
+          <End Role="Loan" EntitySet="Loans" />
+          <End Role="Copy" EntitySet="Copies" />
+        </AssociationSet>
+
+        <!--
+          3.0 splits the single V2 service operation in two - but through an attribute, not through
+          separate elements: `IsSideEffecting="false"` makes a FunctionImport a function, the default
+          makes it an action. `IsBindable="true"` turns the first parameter into a binding parameter,
+          so the bound operations of the V4 model come back as bound, on both cardinalities.
+
+          Also new in 3.0 and used here: complex and collection parameters (`LoanStatistics`,
+          `CleanUpKeywords`), and `EntitySetPath` for entity-returning bound operations.
+
+          Still absent: composability and overloads, so `NewReleases` is a plain function and the two
+          `Search` / `AvailableCopies` signatures remain collapsed into one each.
+        -->
+        <FunctionImport Name="TotalMediaCount" ReturnType="Edm.Int64" IsSideEffecting="false" m:HttpMethod="GET" />
+        <FunctionImport Name="AllLanguages" ReturnType="Collection(Edm.String)" IsSideEffecting="false" m:HttpMethod="GET" />
+        <FunctionImport Name="LoanStatistics" ReturnType="Library.Circulation.LoanStats" IsSideEffecting="false" m:HttpMethod="GET">
+          <Parameter Name="Period" Type="Library.Circulation.DateRange" Mode="In" />
+        </FunctionImport>
+        <FunctionImport Name="StatsPerBranch" ReturnType="Collection(Library.Circulation.BranchStats)" IsSideEffecting="false" m:HttpMethod="GET" />
+        <FunctionImport Name="MostReadMedium" ReturnType="Library.Catalog.Medium" EntitySet="Media" IsSideEffecting="false" m:HttpMethod="GET" />
+        <FunctionImport Name="NewReleases" ReturnType="Collection(Library.Catalog.Medium)" EntitySet="Media" IsSideEffecting="false" m:HttpMethod="GET" />
+        <FunctionImport Name="Search" ReturnType="Collection(Library.Catalog.Medium)" EntitySet="Media" IsSideEffecting="false" m:HttpMethod="GET">
+          <Parameter Name="Term" Type="Edm.String" Nullable="false" Mode="In" />
+          <Parameter Name="MaxResults" Type="Edm.Int32" Mode="In" />
+        </FunctionImport>
+
+        <!-- bindable functions: the first parameter is the binding parameter -->
+        <FunctionImport Name="OutstandingBalance" ReturnType="Edm.Decimal" IsSideEffecting="false" IsBindable="true">
+          <Parameter Name="member" Type="Library.Circulation.Member" Mode="In" />
+        </FunctionImport>
+        <FunctionImport Name="AvailableLanguages" ReturnType="Collection(Edm.String)" IsSideEffecting="false" IsBindable="true">
+          <Parameter Name="media" Type="Collection(Library.Catalog.Medium)" Mode="In" />
+        </FunctionImport>
+        <FunctionImport Name="LoanMetrics" ReturnType="Library.Catalog.MediumStats" IsSideEffecting="false" IsBindable="true">
+          <Parameter Name="medium" Type="Library.Catalog.Medium" Mode="In" />
+        </FunctionImport>
+        <FunctionImport Name="NoticeHistory" ReturnType="Collection(Library.Circulation.OverdueNotice)" IsSideEffecting="false" IsBindable="true">
+          <Parameter Name="member" Type="Library.Circulation.Member" Mode="In" />
+        </FunctionImport>
+        <FunctionImport Name="AvailableCopy" ReturnType="Library.Circulation.Copy" EntitySetPath="medium/Copies" IsSideEffecting="false" IsBindable="true">
+          <Parameter Name="medium" Type="Library.Catalog.Medium" Mode="In" />
+        </FunctionImport>
+        <FunctionImport Name="AvailableCopies" ReturnType="Collection(Library.Circulation.Copy)" EntitySetPath="medium/Copies" IsSideEffecting="false" IsBindable="true">
+          <Parameter Name="medium" Type="Library.Catalog.Medium" Mode="In" />
+        </FunctionImport>
+
+        <!-- actions: side-effecting by default, invoked with POST -->
+        <FunctionImport Name="ClosureDay" m:HttpMethod="POST">
+          <Parameter Name="Day" Type="Edm.DateTime" Nullable="false" Mode="In" />
+        </FunctionImport>
+        <FunctionImport Name="NextInventoryNumber" ReturnType="Edm.Int32" m:HttpMethod="POST" />
+        <FunctionImport Name="CleanUpKeywords" ReturnType="Collection(Edm.String)" m:HttpMethod="POST">
+          <Parameter Name="Obsolete" Type="Collection(Edm.String)" Mode="In" />
+        </FunctionImport>
+        <FunctionImport Name="YearEndClosing" ReturnType="Library.Circulation.AnnualReport" m:HttpMethod="POST">
+          <Parameter Name="Year" Type="Edm.Int32" Nullable="false" Mode="In" />
+        </FunctionImport>
+        <FunctionImport Name="RunOverdueNotices" ReturnType="Collection(Library.Circulation.OverdueNotice)" m:HttpMethod="POST" />
+        <FunctionImport Name="RunStockCheck" ReturnType="Collection(Library.Catalog.Medium)" EntitySet="Media" m:HttpMethod="POST" />
+
+        <!-- bindable actions, on both cardinalities -->
+        <FunctionImport Name="CheckOut" IsBindable="true" m:HttpMethod="POST">
+          <Parameter Name="copy" Type="Library.Circulation.Copy" Mode="In" />
+          <Parameter Name="MemberId" Type="Edm.Int32" Nullable="false" Mode="In" />
+        </FunctionImport>
+        <FunctionImport Name="AssessCondition" ReturnType="Library.Catalog.ConditionReport" IsBindable="true" m:HttpMethod="POST">
+          <Parameter Name="copy" Type="Library.Circulation.Copy" Mode="In" />
+          <Parameter Name="NewCondition" Type="Edm.Byte" Nullable="false" Mode="In" />
+          <Parameter Name="Remark" Type="Edm.String" Mode="In" />
+        </FunctionImport>
+        <FunctionImport Name="Reserve" ReturnType="Edm.Int32" IsBindable="true" m:HttpMethod="POST">
+          <Parameter Name="medium" Type="Library.Catalog.Medium" Mode="In" />
+          <Parameter Name="MemberId" Type="Edm.Int32" Nullable="false" Mode="In" />
+        </FunctionImport>
+        <FunctionImport Name="RunReminders" ReturnType="Collection(Library.Circulation.OverdueNotice)" IsBindable="true" m:HttpMethod="POST">
+          <Parameter Name="member" Type="Library.Circulation.Member" Mode="In" />
+        </FunctionImport>
+        <FunctionImport Name="Renew" ReturnType="Library.Circulation.Loan" EntitySetPath="loan" IsBindable="true" m:HttpMethod="POST">
+          <Parameter Name="loan" Type="Library.Circulation.Loan" Mode="In" />
+        </FunctionImport>
+        <FunctionImport Name="RenewAll" ReturnType="Collection(Library.Circulation.Loan)" EntitySetPath="loans" IsBindable="true" m:HttpMethod="POST">
+          <Parameter Name="loans" Type="Collection(Library.Circulation.Loan)" Mode="In" />
+        </FunctionImport>
+        <FunctionImport Name="BulkRenew" ReturnType="Collection(Edm.String)" IsBindable="true" m:HttpMethod="POST">
+          <Parameter Name="loans" Type="Collection(Library.Circulation.Loan)" Mode="In" />
+        </FunctionImport>
+
+      </EntityContainer>
+
+    </Schema>
+
+  </edmx:DataServices>
+</edmx:Edmx>

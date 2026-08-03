@@ -11,6 +11,8 @@ Companion artifacts:
   document, 100% CSDL-conformant.
 - [`quirks.xml`](quirks.xml) — a tiny separate "torture"
   fixture containing deliberately non-conformant constructs (see below).
+- [`library-v2.xml`](library-v2.xml) / [`library-v3.xml`](library-v3.xml) — reduced renditions for the
+  older protocol versions, described in [`library-v2-v3.md`](library-v2-v3.md).
 
 The model deliberately includes features the odata2ts client currently does **not** (fully) support per
 the odata2ts client coverage notes — composable
@@ -34,9 +36,12 @@ identifier can make a strict server/client reject the **entire** `$metadata` doc
 every other feature verdict. The main model stays 100% parseable; the quirks file yields its own
 separate parse-level verdict.
 
-**V4.01, no V2 counterpart**: `Edm.Untyped` requires `Version="4.01"`. Most headline features (actions
-with all return-type variants, abstract/open types, overloads, composable functions, modern scalar
-types) are structurally impossible in V2 CSDL; a reduced V2 companion would be a separate task.
+**V4.01**: `Edm.Untyped` requires `Version="4.01"`. Most headline features (actions with all return-type
+variants, open types, overloads, composable functions, modern scalar types) are structurally impossible
+in V2 CSDL, so the older versions get **reduced models of their own** rather than a downgrade of this
+one — [`library-v2.xml`](library-v2.xml) and [`library-v3.xml`](library-v3.xml), see
+[`library-v2-v3.md`](library-v2-v3.md). Nothing is approximated there: what a version cannot express is
+absent, so a verdict stays a verdict about the implementation.
 
 ## Namespace architecture
 
@@ -224,8 +229,10 @@ CSDL validation, not XML parsing.
 
 - **Keyless concrete entity types** (Dynamics-365-style, odata2ts#241/#247) — a spec-ambiguous
   real-world behavior; belongs in a further dedicated non-strict fixture if needed, not here.
-- **V2 companion model** with V2 literal quirks (`guid'…'`, `datetime'…'`, `L`/`M`/`D` suffixes,
-  odata2ts#35/#338/#47/#84) — separate task if a V2 server ever needs evaluating.
+- **V2/V3 literal quirks** (`guid'…'`, `datetime'…'`, `L`/`M`/`D` suffixes, odata2ts#35/#338/#47/#84) —
+  these are URL and payload conventions, not model constructs, so they belong to a server's test
+  scenarios rather than to the EDMX. The models themselves now exist:
+  [`library-v2.xml`](library-v2.xml), [`library-v3.xml`](library-v3.xml).
 - **Large-schema stress variant** (15MB+ `$metadata`, odata2ts#244/#251) — possible later generated
   variant of this model.
 - **`Collection(primitive)` operation return type combined with an active client-side value converter**
