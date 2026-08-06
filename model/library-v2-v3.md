@@ -13,7 +13,7 @@ a great many real deployments still are.
 
 **The two files are a chain, not two independent models.** `library-v3.xml` is `library-v2.xml` plus
 everything OData 3.0 adds, and nothing else. That mirrors how the versions actually relate — as
-[odata-v1-v3.md](../feature-matrix/odata-v1-v3.md) puts it, "2.0 and 3.0 add to their predecessor rather
+[the V1-V3 feature matrix][matrix-v1-v3] puts it, "2.0 and 3.0 add to their predecessor rather
 than replacing it, and a 3.0 service is still a 2.0 service" — and it makes the **diff between the two
 files the 3.0 delta**, expressed in a model rather than in prose:
 
@@ -34,8 +34,8 @@ the version cannot express.** Nothing was approximated to keep a feature alive. 
 plain `Edm.Byte` and the _feature_ is simply gone, recorded here rather than faked in the model. A
 verdict measured against these files is therefore a verdict about the server, never about the rendition.
 
-The version each construct belongs to comes from
-[feature-matrix/odata-v1-v3.md](../feature-matrix/odata-v1-v3.md); that matrix is the yardstick and this
+The version each construct belongs to comes from the
+[V1-V3 feature matrix][matrix-v1-v3]; that matrix is the yardstick and this
 model is what it looks like when instantiated.
 
 ## What each rendition contains
@@ -148,3 +148,5 @@ That second parser is worth keeping in the loop: it is stricter than Microsoft's
 matters here, refusing a complex-typed parameter on a V2 `FunctionImport`. That is precisely the rule
 that forced `LoanStatistics` to take two dates in the V2 rendition, and it was found by running the
 parser, not by reading the spec.
+
+[matrix-v1-v3]: https://odata2ts.github.io/odata-concepts/odata-v1-v3-feature-matrix
