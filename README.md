@@ -8,12 +8,12 @@ what the protocol actually offers to measure them by.
 
 Everything in this repository exists for these documents:
 
-| Document                                                           | What it is                                                                                                       |
-| ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| **[model/library.xml](model/library.xml)**                         | The reference model as EDMX — OData 4.01, 100 % CSDL-conformant. 20 entity types, 9 complex types, 29 operations |
-| **[model/library.md](model/library.md)**                           | Its description: design decisions, namespace architecture, and the feature → model-location mapping              |
-| **[feature-matrix/odata-v4.md](feature-matrix/odata-v4.md)**       | Every feature of OData 4.0 / 4.01, 296 rows, with conformance level and `MUST`/`SHOULD`/`MAY`                    |
-| **[feature-matrix/odata-v1-v3.md](feature-matrix/odata-v1-v3.md)** | The same for OData 1.0 / 2.0 / 3.0, 201 rows, with the role the obligation falls on                              |
+| Document                                       | What it is                                                                                                       |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| **[model/library.xml](model/library.xml)**     | The reference model as EDMX — OData 4.01, 100 % CSDL-conformant. 20 entity types, 9 complex types, 29 operations |
+| **[model/library.md](model/library.md)**       | Its description: design decisions, namespace architecture, and the feature → model-location mapping              |
+| **[OData V4 Feature Matrix][matrix-v4]**       | Every feature of OData 4.0 / 4.01, 296 rows, with conformance level and `MUST`/`SHOULD`/`MAY`                    |
+| **[OData V1-V3 Feature Matrix][matrix-v1-v3]** | The same for OData 1.0 / 2.0 / 3.0, 201 rows, with the role the obligation falls on                              |
 
 The older protocol versions get **models of their own** rather than a downgraded V4 document, because
 most of what the V4 model is built to probe has no pre-V4 spelling at all:
@@ -31,7 +31,9 @@ the main model.
 ## How the pieces fit together
 
 The **feature matrices** answer "what is there, and how binding is it?" - purely from the OASIS and
-Microsoft specifications, with no implementation in view. They are the yardstick.
+Microsoft specifications, with no implementation in view. They are the yardstick. Being documentation
+rather than test material, they live on the [odata2ts documentation site][matrix-v4] and not in this
+repository.
 
 The **model** is a probe, not a benchmark. It packs as much of the protocol as possible into one
 coherent domain, deliberately in _combination_ - streaming inside an inheritance hierarchy, an open type
@@ -71,10 +73,9 @@ Intermediate level.
 
 ## Layout
 
-| Path              | Contents                                                                                             |
-| ----------------- | ---------------------------------------------------------------------------------------------------- |
-| `model/`          | The reference model: EDMX per protocol version, their descriptions, and the non-conformant companion |
-| `feature-matrix/` | One document per specification family, independent of any implementation                             |
+| Path     | Contents                                                                                             |
+| -------- | ---------------------------------------------------------------------------------------------------- |
+| `model/` | The reference model: EDMX per protocol version, their descriptions, and the non-conformant companion |
 
 ## Conventions
 
@@ -92,3 +93,5 @@ hand-curated, heavily commented and byte-stable, so that consumers can diff thei
 against them. Reformatting would produce noise in every such diff.
 
 [MS-ODATA]: https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-odata/
+[matrix-v4]: https://odata2ts.github.io/odata-concepts/odata-v4-feature-matrix
+[matrix-v1-v3]: https://odata2ts.github.io/odata-concepts/odata-v1-v3-feature-matrix
