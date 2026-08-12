@@ -65,7 +65,7 @@ The operation count barely moves, but what those operations _are_ changes comple
 | `OpenType`, `Edm.Untyped`                      | ❌  | V4                      | **`CollectorsItem` dropped entirely**, it existed only for them                                 |
 | `Singleton`                                    | ❌  | V4                      | `MainBranch` dropped                                                                            |
 | Alternate keys                                 | ❌  | V4                      | the `Core.AlternateKeys` annotation on `PrintMedium` dropped                                    |
-| Vocabularies / standard terms                  | ❌  | mechanism 3.0, terms V4 | `Core.Computed`, `Core.OptimisticConcurrency`, `Capabilities.SearchRestrictions` dropped        |
+| Vocabularies / standard terms                  | ⚠️  | mechanism 3.0, terms V4 | `Core.OptimisticConcurrency` and `Capabilities.SearchRestrictions` dropped; `Core.Computed` and `Core.Immutable` survive as attribute annotations (`annotation:StoreGeneratedPattern`, `sap:creatable`/`sap:updatable`), `Core.ComputedDefaultValue` and `Core.Permissions` have no V2 form |
 | `NavigationPropertyBinding`                    | ❌  | V4                      | replaced by `Association` / `AssociationSet` — see below                                        |
 | Bound operations                               | ❌  | 3.0                     | the receiver becomes an ordinary key parameter                                                  |
 | Operation overloads                            | ❌  | V4                      | the two `Search` and the two `AvailableCopies` signatures collapse into one each                |
