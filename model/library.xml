@@ -171,8 +171,14 @@
         <Property Name="DateOfBirth" Type="Edm.Date" />
         <Property Name="Address" Type="Library.Catalog.PostalAddress" />
         <Property Name="PreviousAddresses" Type="Collection(Library.Catalog.PostalAddress)" />
-        <Property Name="ActiveSince" Type="Edm.DateTimeOffset" Precision="7" />
-        <Property Name="Balance" Type="Edm.Decimal" Precision="9" Scale="2" />
+        <!-- The client may send a value on insert; if it does not, the service generates one. -->
+        <Property Name="ActiveSince" Type="Edm.DateTimeOffset" Precision="7">
+          <Annotation Term="Core.ComputedDefaultValue" Bool="true" />
+        </Property>
+        <!-- Readable, never writable - the counterpart to Computed, which says nothing about reading. -->
+        <Property Name="Balance" Type="Edm.Decimal" Precision="9" Scale="2">
+          <Annotation Term="Core.Permissions" EnumMember="Core.Permission/Read" />
+        </Property>
         <NavigationProperty Name="Loans" Type="Collection(Library.Circulation.Loan)" Partner="Member">
           <OnDelete Action="Cascade" />
         </NavigationProperty>
@@ -204,7 +210,10 @@
           <PropertyRef Name="Id" />
         </Key>
         <Property Name="Id" Type="Edm.Guid" Nullable="false" />
-        <Property Name="LoanedAt" Type="Edm.DateTimeOffset" Nullable="false" Precision="7" />
+        <!-- Settable on insert, fixed from then on - the one term that separates create from update. -->
+        <Property Name="LoanedAt" Type="Edm.DateTimeOffset" Nullable="false" Precision="7">
+          <Annotation Term="Core.Immutable" Bool="true" />
+        </Property>
         <Property Name="DueDate" Type="Edm.Date" Nullable="false" />
         <Property Name="ReturnedAt" Type="Edm.DateTimeOffset" Precision="7" />
         <Property Name="LateFee" Type="Edm.Decimal" Precision="5" Scale="2" />

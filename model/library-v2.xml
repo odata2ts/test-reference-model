@@ -11,8 +11,31 @@
   must actually reproduce (V4 has it too, but CAP - the first implementation measured - could not),
   ConcurrencyMode as a first-class facet rather than a vocabulary annotation, and Association /
   AssociationSet as the explicit relationship model that V4 replaced with navigation property binding.
+
+  Annotations. V2 has no vocabularies - those arrive in 3.0, and the standard terms in V4 - so what V4
+  states with `<Annotation Term="Core.…"/>` is carried here by the two attribute dialects the V2 era
+  actually produced, both of them foreign-namespace attributes on `<Property>`:
+
+    * `annotation:StoreGeneratedPattern` (Microsoft, WCF Data Services / EF). `Identity` and `Computed`
+      both mean the store owns the value; neither lets a client supply one.
+    * `sap:creatable` / `sap:updatable` (SAP Gateway), which only mean anything as a pair.
+
+  They normalize onto the V4 terms as follows, which is the mapping a client is expected to apply:
+
+    * StoreGeneratedPattern="Identity" or "Computed"   ->  Core.Computed
+    * sap:creatable="false" and sap:updatable="false"  ->  Core.Computed
+    * sap:updatable="false", creatable left at default ->  Core.Immutable
+    * sap:creatable="false" and sap:updatable="true"   ->  nothing, see below
+
+  Two consequences worth stating, because they are properties of V2 and not of any implementation:
+  `Core.ComputedDefaultValue` and `Core.Permissions` have no V2 form at all, so `Member.ActiveSince`
+  and `Member.Balance` carry nothing here although the V4 model annotates them; and
+  creatable="false" with updatable="true" - settable never, changeable later - has no V4 counterpart,
+  so it normalizes to nothing rather than to a term that would overstate it. Not used in this model.
 -->
-<edmx:Edmx Version="1.0" xmlns:edmx="http://schemas.microsoft.com/ado/2007/06/edmx">
+<edmx:Edmx Version="1.0" xmlns:edmx="http://schemas.microsoft.com/ado/2007/06/edmx"
+           xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation"
+           xmlns:sap="http://www.sap.com/Protocols/SAPData">
   <edmx:DataServices m:DataServiceVersion="2.0" xmlns:m="http://schemas.microsoft.com/ado/2007/08/dataservices/metadata">
 
     <Schema Namespace="Library.Catalog" xmlns="http://schemas.microsoft.com/ado/2008/09/edm">
@@ -48,8 +71,8 @@
         Medium -> AudioMedium -> Audiobook / DVD. Two of the three roots are abstract and only derived
         types are instantiable - the entity set `Media` is therefore typed on an abstract type.
 
-        Gone against V4: `Keywords` (collection-valued properties are 3.0) and the `Core.Computed`
-        annotation on PopularityScore (vocabularies are 3.0, standard terms V4).
+        Gone against V4: `Keywords` (collection-valued properties are 3.0). `Core.Computed` on
+        PopularityScore survives in the two forms V2 does have - see the note on annotations above.
       -->
       <EntityType Name="Medium" Abstract="true">
         <Key>
@@ -60,7 +83,10 @@
         <Property Name="Language" Type="Edm.String" MaxLength="40" />
         <!-- Edm.Date is V4; V2 has only Edm.DateTime -->
         <Property Name="PublicationDate" Type="Edm.DateTime" />
-        <Property Name="PopularityScore" Type="Edm.Double" />
+        <!-- V4: `Core.Computed`. Both dialects say it, and they agree. -->
+        <Property Name="PopularityScore" Type="Edm.Double"
+                  annotation:StoreGeneratedPattern="Computed"
+                  sap:creatable="false" sap:updatable="false" />
         <NavigationProperty Name="Copies" Relationship="Library.Circulation.Medium_Copies" FromRole="Medium" ToRole="Copy" />
       </EntityType>
 
@@ -202,7 +228,9 @@
           <PropertyRef Name="Id" />
         </Key>
         <Property Name="Id" Type="Edm.Guid" Nullable="false" />
-        <Property Name="LoanedAt" Type="Edm.DateTimeOffset" Nullable="false" Precision="7" />
+        <!-- V4: `Core.Immutable`. `creatable` stays at its default `true` - that is the whole term. -->
+        <Property Name="LoanedAt" Type="Edm.DateTimeOffset" Nullable="false" Precision="7"
+                  sap:updatable="false" />
         <Property Name="DueDate" Type="Edm.DateTime" Nullable="false" />
         <!-- nullable on purpose: the explicit-null-vs-absent test case -->
         <Property Name="ReturnedAt" Type="Edm.DateTimeOffset" Precision="7" />
