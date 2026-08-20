@@ -49,8 +49,8 @@ to expose rather than to paper over. Stating one term here would also force a ve
 implementation at once, when the honest answer differs per server — and differs for reasons worth seeing:
 
 - **SAP CAP** annotates a UUID key `Core.ComputedDefaultValue` **by itself**, because CDS knows it fills
-  such a key in and still lets a client supply one. An integer key gets nothing, so the same model ends
-  up half annotated without anybody deciding that.
+  such a key in and still lets a client supply one — and an integer key not at all, so the same model
+  comes out half annotated unless the remaining half is written by hand.
 - **ASP.NET Core OData** annotates nothing; its identity columns discard a client key outright, which is
   `Core.Computed` rather than `ComputedDefaultValue`.
 - **OData V2** cannot express "may be supplied, otherwise generated" at all — only "the server owns it".
