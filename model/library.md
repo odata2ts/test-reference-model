@@ -74,6 +74,35 @@ can require the former on create while leaving it out of an update. `Copy` cover
 Complex types take no part in this: CSDL gives them no `<Key>`, so there is nothing to annotate. They can
 carry managed properties like any structured type, and none in this model does.
 
+**Most extended features have exactly one carrier, and that is the model's weakest point.** Combination
+is the whole idea — a feature only met in isolation is a feature never tested against its neighbours —
+but a carrier that is also the _sole_ witness for a feature makes the two inseparable. Counted over
+`library.xml`:
+
+| Feature                        | Carriers                        |
+| ------------------------------ | ------------------------------- |
+| media entity (`HasStream`)     | 2 — `EBook`, `AudiobookChapter` |
+| abstract type                  | 4                               |
+| containment (`ContainsTarget`) | **1** — `Audiobook.Chapters`    |
+| singleton                      | **1**                           |
+| open type                      | **1**                           |
+| flags enum                     | **1**                           |
+| `TypeDefinition`               | **1**                           |
+
+The keys above show what the alternative buys: `Copy` and `Branch` both witness a client-assigned key, so
+neither can be undermined alone.
+
+`AudiobookChapter` is where this already bites. It is at once the only containment target and one of the
+two media entities, so anything done for containment lands on the media-entity evidence too. Concretely:
+a contained entity is identified within its container, so an implementation told to state this model's
+containment drops the contained entity's foreign key to its parent and re-keys it — observed in
+`test-server-cap` 0.4.0, where `AudiobookChapters` lost both `up__Id` and its composite key. The media
+entity underneath changed shape for a reason that has nothing to do with streaming.
+
+So when extending this model, **a second carrier for a feature that has one is worth more than a first
+carrier for a feature that has none**, and a new special feature is better placed on an entity that is
+not already some other feature's only witness.
+
 ## Namespace architecture
 
 | Namespace             | Purpose                                                                                                                |
