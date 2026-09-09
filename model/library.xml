@@ -89,7 +89,11 @@
       <EntityType Name="Book" BaseType="Library.Catalog.PrintMedium">
         <Property Name="PageCount" Type="Edm.Int16" />
         <Property Name="AgeRating" Type="Edm.Byte" />
-        <NavigationProperty Name="Publisher" Type="PublisherRegistry.Publisher" Partner="Books" />
+        <!-- A plain, non-key referential constraint: the body-reference scenario binds this on insert. -->
+        <Property Name="PublisherId" Type="Edm.Int32" />
+        <NavigationProperty Name="Publisher" Type="PublisherRegistry.Publisher" Partner="Books">
+          <ReferentialConstraint Property="PublisherId" ReferencedProperty="Id" />
+        </NavigationProperty>
       </EntityType>
 
       <EntityType Name="Magazine" BaseType="Library.Catalog.PrintMedium">
